@@ -8,6 +8,15 @@ request.add_header('User-Agent', 'Macho Macho Man')
 
 #Create Database Object
 db = sqlite3.connect('Page_Record.db')
+
+
+#Function Area
+def page_switcher(need_page):
+    link = 'http://www.hgamecn.com/htmldata/articlelist/list_'+str(need_page)+'.html'
+    #for debug
+    print link
+
+#Main Start
 try:
     response = urllib2.urlopen(request, timeout=5)
 except urllib2.URLError as e:
@@ -22,8 +31,10 @@ else:
     print 'Code: ', response.code
     page = response.read()
     print page
+    print 'Current Page Print Finished.'
+
+#Analysis Part
 
 
-def page_switcher(begin_page, end_page):
-    for current_page in range(begin_page, end_page+1):
-        print page
+
+

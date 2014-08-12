@@ -12,7 +12,9 @@ db = sqlite3.connect('Page_Record.db')
 
 #Function Area
 def page_switcher(need_page):
-    link = 'http://www.hgamecn.com/htmldata/articlelist/list_'+str(need_page)+'.html'
+    link = 'http://www.hgamecn.com/htmldata/articlelist/list_' + str(need_page) + '.html'
+    # link = 'http://www.hgamecn.com/htmldata/articlelist/list_{page}.html'.format(page=need_page) recommend <- :)
+    # link = 'http://www.hgamecn.com/htmldata/articlelist/list_%d.html' % need_page
     #for debug
     print link
 

@@ -41,6 +41,12 @@ def linker(url):
         return response.read()
 
 
+def count_page(url):
+    current_page = linker(url)
+    match_page_count = re.compile('<div class="hgc_pages">1/(.*) \xe9')
+    return match_page_count.findall(current_page)
+
+
 def get_title(current_page):
     match_title = re.compile('<div class="gtitle"><a href=".*" target="_blank">(.*)</a></div>')
     return match_title.findall(current_page)
@@ -62,7 +68,7 @@ def get_tags(current_page):
     return [match_tag.findall(tags) for tags in match_tags.findall(current_page)]
 
 
-def main():
+def crawler(url):
     title_list = []
     publisher_list = []
     publish_date_list = []
@@ -81,14 +87,26 @@ def main():
         games.append(Game(title=title_list[lr], publisher=publisher_list[lr],
                           date=publish_date_list[lr], tags=tag_data_list[lr]))
 
-url = 'http://www.hgamecn.com/htmldata/articlelist/'
-
-c_page = 1
-for page in range(0, 126):
-    main()
-    c_page += 1
-
-    url = page_switcher(c_page)
+# Main Start
+now_page = 1
+urls = 'http://www.hgamecn.com/htmldata/articlelist/'
+total_page = int(count_page(urls)[0])
+x=0
+y=20
+print total_page
+for page in range(0, total_page):
+    crawler(urls)
+    now_page += 1
+    for glr in games[x:y]:
+        print '\n' + glr.title,
+        print glr.publisher,
+        print glr.date,
+        for tr in glr.tags:
+            print tr,
+    print '\n'
+    x = y
+    y = y + 20
+    urls = page_switcher(now_page)
 
 
 for glr in games:

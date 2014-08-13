@@ -30,17 +30,36 @@ def linker(url):
         return response.read()
 
 
-def get_title(data):
-    match_title = re.compile('<div class="gtitle"><a href=".*"'
-                             ' target="_blank">(.*)</a></div>')
-    return match_title.findall(data)
+def get_title(current_page):
+    match_title = re.compile('<div class="gtitle"><a href=".*" target="_blank">(.*)</a></div>')
+    return match_title.findall(current_page)
+
+
+def get_publisher(current_page):
+    match_publisher = re.compile('<span class="maker">.*?<a href=".*?">(.*?)</a></span>')
+    return match_publisher.findall(current_page)
+
+
+def get_publish_date(current_page):
+    match_publish_date = re.compile('<span class="date">.*?>(.*?)</a></span>')
+    return match_publish_date.findall(current_page)
+
+
+def get_tags(current_page):
+    match_get_tags = re.compile('<div class="tag">.*?>(.*?)</a><a href=".*">(.*?)</a>')
+    return match_get_tags.findall(current_page)
 
 
 def main():
     current_page = linker(url)
-    for title_data in get_title(current_page):
-        print title_data[:-6]
-
+    #for title_data in get_title(current_page):
+     #   print title_data[:-6]
+    #for publisher_data in get_publisher(current_page):
+     #   print publisher_data
+    #for publish_date in get_publish_date(current_page):
+     #   print publish_date
+    for tag_data in get_tags(current_page):
+        print tag_data
 
 url = 'http://www.hgamecn.com/htmldata/articlelist/'
 main()

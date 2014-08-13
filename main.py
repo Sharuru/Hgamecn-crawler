@@ -3,6 +3,16 @@ __author__ = 'Mave'
 import re
 import urllib2
 
+games = []
+
+
+class Game(object):
+    def __init__(self, title, publisher='', date='', tags=[]):
+        self.title = title
+        self.publisher = publisher
+        self.date = date
+        self.tags = tags
+
 
 # Function Area
 def page_switcher(need_page):
@@ -25,7 +35,8 @@ def linker(url):
             print 'Error Code: ', e.code
             exit()
     else:
-        print url + 'Website connected.'
+        print url,
+        print 'Connected.'
         print 'Response Code: ', response.code
         return response.read()
 
@@ -46,20 +57,44 @@ def get_publish_date(current_page):
 
 
 def get_tags(current_page):
-    match_get_tags = re.compile('<div class="tag">.*?>(.*?)</a><a href=".*">(.*?)</a>')
-    return match_get_tags.findall(current_page)
+    match_tags = re.compile('<div class="tag">(.*?)</div>')
+    match_tag = re.compile('<a href=".*?">(.*?)</a>')
+    return [match_tag.findall(tags) for tags in match_tags.findall(current_page)]
 
 
 def main():
+    title_list = []
+    publisher_list = []
+    publish_date_list = []
+    tag_data_list = []
     current_page = linker(url)
-    #for title_data in get_title(current_page):
-     #   print title_data[:-6]
-    #for publisher_data in get_publisher(current_page):
-     #   print publisher_data
-    #for publish_date in get_publish_date(current_page):
-     #   print publish_date
+    print 'I am operating data in this page...'
+    for title_data in get_title(current_page):
+        title_list.append(title_data[:-6])
+    for publisher_data in get_publisher(current_page):
+        publisher_list.append(publisher_data)
+    for publish_date in get_publish_date(current_page):
+        publish_date_list.append(publish_date)
     for tag_data in get_tags(current_page):
-        print tag_data
+        tag_data_list.append(tag_data)
+    for lr in range(0, len(title_list)):
+        games.append(Game(title=title_list[lr], publisher=publisher_list[lr],
+                          date=publish_date_list[lr], tags=tag_data_list[lr]))
 
 url = 'http://www.hgamecn.com/htmldata/articlelist/'
-main()
+
+c_page = 1
+for page in range(0, 126):
+    main()
+    c_page += 1
+
+    url = page_switcher(c_page)
+
+
+for glr in games:
+    print '\n' + glr.title,
+    print glr.publisher,
+    print glr.date,
+    for tr in glr.tags:
+        print tr,
+print '\n'

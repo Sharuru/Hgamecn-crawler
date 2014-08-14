@@ -2,8 +2,45 @@ __author__ = 'Mave'
 
 import re
 import urllib2
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String
+
 
 games = []
+# Database Object
+engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
+Base = declarative_base()
+
+
+class GameTable(Base):
+    __tablename__ = 'game'
+    game_id = Column(Integer, primary_key=True, autoincrement=True)
+    game_name = Column(String)
+    game_publisher_id = Column(Integer)
+    game_publish_date = Column(String)
+
+
+class GameTagsTable(Base):
+    __tablename__ = 'games_tags'
+    gt_id = Column(Integer, primary_key=True, autoincrement=True)
+    gt_game_id = Column(Integer)
+    gt_tag_id = Column(Integer)
+
+
+class PublisherTable(Base):
+    __tablename__ = 'publisher'
+    publisher_id = Column(Integer, primary_key=True, autoincrement=True)
+    publisher_name = Column(String)
+
+
+class TagsTable(Base):
+    __tablename__ = 'tags'
+    tag_id = Column(Integer, primary_key=True, autoincrement=True)
+    tag_name = Column(String)
+
+Base.metadata.create_all(engine)
+
 
 
 class Game(object):

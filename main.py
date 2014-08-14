@@ -5,12 +5,13 @@ import urllib2
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import sessionmaker
 
-
-games = []
 # Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
 Base = declarative_base()
+Session = sessionmaker(bind=engine)
+session = Session()
 
 
 class GameTable(Base):
@@ -41,6 +42,8 @@ class TagsTable(Base):
 
 Base.metadata.create_all(engine)
 
+# Game Class
+games = []
 
 
 class Game(object):
@@ -128,28 +131,25 @@ def crawler(url):
 now_page = 1
 urls = 'http://www.hgamecn.com/htmldata/articlelist/'
 total_page = int(count_page(urls)[0])
-x=0
-y=20
-print total_page
-for page in range(0, total_page):
+print_head = 0
+print_tail = 20
+print 'There are {total} Pages need to be crawled.'.format(total=total_page)
+print 'Start crawling...'
+for page in range(1, total_page + 1):
     crawler(urls)
     now_page += 1
-    for glr in games[x:y]:
+    for glr in games[print_head: print_tail]:
         print '\n' + glr.title,
+        new_title = GameTable(game_name=glr.title, game_publish_date=glr.date)
+        session.add(new_title)
+        session.commit()
         print glr.publisher,
+
         print glr.date,
         for tr in glr.tags:
             print tr,
     print '\n'
-    x = y
-    y = y + 20
+    print_head = print_tail
+    print_tail += 20
     urls = page_switcher(now_page)
-
-
-for glr in games:
-    print '\n' + glr.title,
-    print glr.publisher,
-    print glr.date,
-    for tr in glr.tags:
-        print tr,
-print '\n'
+print 'Finished.'

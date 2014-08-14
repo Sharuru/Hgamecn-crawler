@@ -17,30 +17,30 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 GameTagsTable = Table('games_tags', Base.metadata,
-                      Column('gt_id', Integer, primary_key=True, autoincrement=True),
-                      Column('gt_game_id', Integer, ForeignKey('game.game_id')),
-                      Column('gt_tag_id', Integer, ForeignKey('tags.tag_id')))
+                      Column('id', Integer, primary_key=True, autoincrement=True),
+                      Column('game_id', Integer, ForeignKey('game.id')),
+                      Column('tag_id', Integer, ForeignKey('tags.id')))
 
 
 class GameTable(Base):
     __tablename__ = 'game'
-    game_id = Column(Integer, primary_key=True)
-    game_name = Column(String)
-    game_publisher_id = Column(Integer)
-    game_publish_date = Column(String)
-    tags = relationship('TagsTable', secondary=GameTagsTable, backref='game')
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    publisher = relationship('PublisherTable', backref='games')
+    publish_date = Column(String)
+    tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
 
 
 class PublisherTable(Base):
     __tablename__ = 'publisher'
-    publisher_id = Column(Integer, primary_key=True, autoincrement=True)
-    publisher_name = Column(String)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
 
 
 class TagsTable(Base):
     __tablename__ = 'tags'
-    tag_id = Column(Integer, primary_key=True, autoincrement=True)
-    tag_name = Column(String)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
 
 Base.metadata.create_all(engine)
 
@@ -137,7 +137,6 @@ def crawler(url):
 now_page = 1
 urls = 'http://www.hgamecn.com/htmldata/articlelist/'
 total_page = int(count_page(urls)[0])
-
 
 print 'There are {total} Pages need to be crawled.'.format(total=total_page)
 print 'Start crawling...'

@@ -6,8 +6,8 @@ import re
 import urllib2
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy import Column, Integer, String, Table, ForeignKey
+from sqlalchemy.orm import sessionmaker, relationship, backref
 
 
 # Database Object
@@ -16,20 +16,19 @@ Base = declarative_base()
 Session = sessionmaker(bind=engine)
 session = Session()
 
+GameTagsTable = Table('games_tags', Base.metadata,
+                      Column('gt_id', Integer, primary_key=True, autoincrement=True),
+                      Column('gt_game_id', Integer, ForeignKey('game.game_id')),
+                      Column('gt_tag_id', Integer, ForeignKey('tags.tag_id')))
+
 
 class GameTable(Base):
     __tablename__ = 'game'
-    game_id = Column(Integer, primary_key=True, autoincrement=True)
+    game_id = Column(Integer, primary_key=True)
     game_name = Column(String)
     game_publisher_id = Column(Integer)
     game_publish_date = Column(String)
-
-
-class GameTagsTable(Base):
-    __tablename__ = 'games_tags'
-    gt_id = Column(Integer, primary_key=True, autoincrement=True)
-    gt_game_id = Column(Integer)
-    gt_tag_id = Column(Integer)
+    tags = relationship('TagsTable', secondary=GameTagsTable, backref='game')
 
 
 class PublisherTable(Base):
@@ -123,19 +122,15 @@ def crawler(url):
     tag_data_list = []
     current_page = linker(url)
     print 'I am operating data in this page...'
-
-    # 尝试一下列表解析 :P
     title_list = [title_data[:-6] for title_data in get_title(current_page)]
-        
     for publisher_data in get_publisher(current_page):
         publisher_list.append(publisher_data)
     for publish_date in get_publish_date(current_page):
         publish_date_list.append(publish_date)
     for tag_data in get_tags(current_page):
         tag_data_list.append(tag_data)
-
     return [games.append(Game(title=title_list[lr], publisher=publisher_list[lr], 
-        date=publish_date_list[lr], tags=tag_data_list[lr])) for lr in range(0, len(title_list))]
+            date=publish_date_list[lr], tags=tag_data_list[lr])) for lr in range(0, len(title_list))]
 
 
 # Main Start

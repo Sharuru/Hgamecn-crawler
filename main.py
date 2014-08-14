@@ -129,8 +129,8 @@ def crawler(url):
         publish_date_list.append(publish_date)
     for tag_data in get_tags(current_page):
         tag_data_list.append(tag_data)
-    return [games.append(Game(title=title_list[lr], publisher=publisher_list[lr], 
-            date=publish_date_list[lr], tags=tag_data_list[lr])) for lr in range(0, len(title_list))]
+    return [Game(title=title_list[lr], publisher=publisher_list[lr],
+            date=publish_date_list[lr], tags=tag_data_list[lr]) for lr in range(0, len(title_list))]
 
 
 # Main Start
@@ -148,8 +148,8 @@ for page in range(1, total_page + 1):
     for glr in games:
         glr.print_game()
 
-        game = GameTable(game_name=glr.title.decode('utf-8'), game_publish_date=glr.date)
-        session.add(new_title)
+        game_info = GameTable(game_name=glr.title.decode('utf-8'), game_publish_date=glr.date)
+        session.add(game_info)
         session.commit()
 
     urls = page_switcher(now_page)

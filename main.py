@@ -1,11 +1,14 @@
+#coding: utf-8
 __author__ = 'Mave'
 
+import sys
 import re
 import urllib2
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import sessionmaker
+
 
 # Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
@@ -42,16 +45,21 @@ class TagsTable(Base):
 
 Base.metadata.create_all(engine)
 
+
 # Game Class
-games = []
-
-
 class Game(object):
     def __init__(self, title, publisher='', date='', tags=[]):
         self.title = title
         self.publisher = publisher
         self.date = date
         self.tags = tags
+
+    def print_game(self):
+        print self.title
+        print 'Publisher:', self.publisher
+        print 'Date:', self.date
+        print 'Tags:', ', '.join(self.tags)
+        print '\n'
 
 
 # Function Area
@@ -115,41 +123,42 @@ def crawler(url):
     tag_data_list = []
     current_page = linker(url)
     print 'I am operating data in this page...'
-    for title_data in get_title(current_page):
-        title_list.append(title_data[:-6])
+
+    # 尝试一下列表解析 :P
+    title_list = [title_data[:-6] for title_data in get_title(current_page)]
+        
     for publisher_data in get_publisher(current_page):
         publisher_list.append(publisher_data)
     for publish_date in get_publish_date(current_page):
         publish_date_list.append(publish_date)
     for tag_data in get_tags(current_page):
         tag_data_list.append(tag_data)
-    for lr in range(0, len(title_list)):
-        games.append(Game(title=title_list[lr], publisher=publisher_list[lr],
-                          date=publish_date_list[lr], tags=tag_data_list[lr]))
+
+    return [games.append(Game(title=title_list[lr], publisher=publisher_list[lr], 
+        date=publish_date_list[lr], tags=tag_data_list[lr])) for lr in range(0, len(title_list))]
+
 
 # Main Start
 now_page = 1
 urls = 'http://www.hgamecn.com/htmldata/articlelist/'
 total_page = int(count_page(urls)[0])
-print_head = 0
-print_tail = 20
+
+
 print 'There are {total} Pages need to be crawled.'.format(total=total_page)
 print 'Start crawling...'
+
 for page in range(1, total_page + 1):
-    crawler(urls)
+    games = crawler(urls)
     now_page += 1
-    for glr in games[print_head: print_tail]:
-        print '\n' + glr.title,
-        new_title = GameTable(game_name=glr.title, game_publish_date=glr.date)
+
+    for glr in games:
+        glr.print_game()
+
+        game = GameTable(game_name=glr.title.decode('utf-8'), game_publish_date=glr.date)
         session.add(new_title)
         session.commit()
-        print glr.publisher,
 
-        print glr.date,
-        for tr in glr.tags:
-            print tr,
-    print '\n'
-    print_head = print_tail
-    print_tail += 20
     urls = page_switcher(now_page)
+
+
 print 'Finished.'

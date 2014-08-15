@@ -26,7 +26,8 @@ class GameTable(Base):
     __tablename__ = 'game'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    publisher = relationship('PublisherTable', backref='games')
+    publisher = Column(Integer, ForeignKey('publisher.id'))
+    publisher_is = relationship('PublisherTable', backref='games')
     publish_date = Column(String)
     tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
 
@@ -148,7 +149,7 @@ for page in range(1, total_page + 1):
     for glr in games:
         glr.print_game()
 
-        game_info = GameTable(game_name=glr.title.decode('utf-8'), game_publish_date=glr.date)
+        game_info = GameTable(name=glr.title.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
         session.add(game_info)
         session.commit()
 

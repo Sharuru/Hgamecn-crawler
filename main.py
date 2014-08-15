@@ -12,7 +12,7 @@ from sqlalchemy.orm.exc import NoResultFound
 # Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
 Base = declarative_base()
-Session = sessionmaker(bind=engine)
+Session = sessionmaker(bind=engine, autoflush=False)
 session = Session()
 
 GameTagsTable = Table('games_tags', Base.metadata,
@@ -65,7 +65,10 @@ class Game(object):
 
 # Function Area
 def page_switcher(need_page):
-    return 'http://www.hgamecn.com/htmldata/articlelist/list_{page}.html'.format(page=need_page)
+    if need_page > 999:
+        return 'Finished.'
+    else:
+        return 'http://www.hgamecn.com/htmldata/articlelist/list_{page}.html'.format(page=need_page)
 
 
 def linker(url):
@@ -90,10 +93,11 @@ def linker(url):
         return response.read()
 
 
-def count_page(url):
+def init_count(url):
     current_page = linker(url)
     match_page_count = re.compile('<div class="hgc_pages">1/(.*) \xe9')
-    return match_page_count.findall(current_page)
+    newest_record_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
+    return [match_page_count.findall(current_page)[0], newest_record_id.findall(current_page)[0]]
 
 
 def get_id(current_page):
@@ -149,43 +153,59 @@ def crawler(url):
 # Main Start
 now_page = 1
 urls = 'http://www.hgamecn.com/htmldata/articlelist/'
-total_page = int(count_page(urls)[0])
 
+# Init Count
+count = init_count(urls)
+total_page = int(count[0])
+newest_id = int(count[1])
+
+# Need Improve
+head_record = session.query(GameTable).first()
+row_count = session.query(GameTable).count()
+record_in_database = head_record.id + row_count - 1
+
+print 'If you are FIRST running this crawler'
 print 'There are {total} Pages need to be crawled.'.format(total=total_page)
+
+print 'The Newest Record ID is {id}'.format(id=newest_id)
+print 'The Newest Record ID in Local is {id}'.format(id=record_in_database)
+
 print 'Start crawling...'
+
+check_switch = False
 
 for page in range(1, total_page + 1):
     games = crawler(urls)
     for glr in games:
         glr.print_game()
         # Game Info Check & Commit
-        try:
-            game_info = session.query(GameTable).filter(GameTable.id == glr.id).one()
-        except NoResultFound:
-            game_info = GameTable(id=glr.id, name=glr.title.decode('utf-8'),
-                                  publisher=glr.publisher.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
+        if int(glr.id) <= record_in_database:
+            print 'Record is Updated.'
+            print 'All Operation Finished.'
+            exit()
+        else:
+            game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8'),
+                                  publisher=glr.publisher.decode('utf-8'), publish_date=glr.date)
             session.add(game_info)
-        # Publisher Info Check & Commit
-        try:
-            publisher = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
-        except NoResultFound:
-            publisher = PublisherTable(name=glr.publisher.decode('utf-8'))
-            session.add(publisher)
-        #session.commit()
-        # Tag Info Check & Commit
-        for one_tag in glr.tags:
+            # Publisher Info Check & Commit
             try:
-                tags = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one()
+                publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
             except NoResultFound:
-                tags = TagsTable(name=one_tag.decode('utf-8'))
-                session.add(tags)
+                publisher_new = PublisherTable(name=glr.publisher.decode('utf-8'))
+                session.add(publisher_new)
                 #session.commit()
-        # GameTagsTable Commit
-
-        session.commit()
+            # Tag Info Check & Commit
+            for one_tag in glr.tags:
+                try:
+                    tag_new = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one()
+                except NoResultFound:
+                    tag_new = TagsTable(name=one_tag.decode('utf-8'))
+                    session.add(tag_new)
+                    #session.commit()
+            session.commit()
+            # GameTagsTable Check & Commit (Under Developing)
 
     now_page += 1
     urls = page_switcher(now_page)
 
-
-print 'Finished.'
+print 'All Operation Finished.'

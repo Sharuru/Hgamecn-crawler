@@ -162,18 +162,28 @@ for page in range(1, total_page + 1):
 
     for glr in games:
         glr.print_game()
-        # Game Info Commit
-        game_info = GameTable(id=glr.id, name=glr.title.decode('utf-8'),
-                              publisher=glr.publisher.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
-        session.add(game_info)
+        # Game Info Check & Commit
+        try:
+            game_info = session.query(GameTable).filter(GameTable.id == glr.id).one()
+        except NoResultFound:
+            game_info = GameTable(id=glr.id, name=glr.title.decode('utf-8'),
+                                  publisher=glr.publisher.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
+            session.add(game_info)
         # Publisher Info Check & Commit
         try:
             publisher = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
         except NoResultFound:
             publisher = PublisherTable(name=glr.publisher.decode('utf-8'))
             session.add(publisher)
+        #session.commit()
         # Tag Info Check & Commit
-
+        for one_tag in glr.tags:
+            try:
+                tags = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one()
+            except NoResultFound:
+                tags = TagsTable(name=one_tag.decode('utf-8'))
+                session.add(tags)
+                #session.commit()
         # GameTagsTable Commit
 
         session.commit()

@@ -134,7 +134,10 @@ def crawler(url):
     print 'I am operating data in this page...'
     for id_data in get_id(current_page):
         id_list.append(id_data)
-    title_list = [title_data[:-6] for title_data in get_title(current_page)]
+    #title_list = [title_data[:-6] for title_data in get_title(current_page)]
+    # It seems kawaii if they use same method :)
+    for title_data in get_title(current_page):
+        title_list.append(title_data[:-6])
     for publisher_data in get_publisher(current_page):
         publisher_list.append(publisher_data)
     for publish_date in get_publish_date(current_page):
@@ -159,15 +162,20 @@ for page in range(1, total_page + 1):
 
     for glr in games:
         glr.print_game()
-
+        # Game Info Commit
         game_info = GameTable(id=glr.id, name=glr.title.decode('utf-8'),
                               publisher=glr.publisher.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
         session.add(game_info)
+        # Publisher Info Check & Commit
         try:
             publisher = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
         except NoResultFound:
             publisher = PublisherTable(name=glr.publisher.decode('utf-8'))
             session.add(publisher)
+        # Tag Info Check & Commit
+
+        # GameTagsTable Commit
+
         session.commit()
 
     urls = page_switcher(now_page)

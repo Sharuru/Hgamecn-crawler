@@ -48,13 +48,15 @@ Base.metadata.create_all(engine)
 
 # Game Class
 class Game(object):
-    def __init__(self, title, publisher='', date='', tags=[]):
+    def __init__(self, id, title, publisher='', date='', tags=[]):
+        self.id = id
         self.title = title
         self.publisher = publisher
         self.date = date
         self.tags = tags
 
     def print_game(self):
+        print self.id
         print self.title
         print 'Publisher:', self.publisher
         print 'Date:', self.date
@@ -95,6 +97,11 @@ def count_page(url):
     return match_page_count.findall(current_page)
 
 
+def get_id(current_page):
+    match_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
+    return match_id.findall(current_page)
+
+
 def get_title(current_page):
     match_title = re.compile('<div class="gtitle"><a href=".*" target="_blank">(.*)</a></div>')
     return match_title.findall(current_page)
@@ -117,12 +124,15 @@ def get_tags(current_page):
 
 
 def crawler(url):
+    id_list = []
     title_list = []
     publisher_list = []
     publish_date_list = []
     tag_data_list = []
     current_page = linker(url)
     print 'I am operating data in this page...'
+    for id_data in get_id(current_page):
+        id_list.append(id_data)
     title_list = [title_data[:-6] for title_data in get_title(current_page)]
     for publisher_data in get_publisher(current_page):
         publisher_list.append(publisher_data)
@@ -130,7 +140,7 @@ def crawler(url):
         publish_date_list.append(publish_date)
     for tag_data in get_tags(current_page):
         tag_data_list.append(tag_data)
-    return [Game(title=title_list[lr], publisher=publisher_list[lr],
+    return [Game(id=id_list[lr], title=title_list[lr], publisher=publisher_list[lr],
             date=publish_date_list[lr], tags=tag_data_list[lr]) for lr in range(0, len(title_list))]
 
 
@@ -149,7 +159,7 @@ for page in range(1, total_page + 1):
     for glr in games:
         glr.print_game()
 
-        game_info = GameTable(name=glr.title.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
+        game_info = GameTable(id=glr.id, name=glr.title.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
         session.add(game_info)
         session.commit()
 

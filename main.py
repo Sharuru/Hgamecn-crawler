@@ -1,15 +1,13 @@
 #coding: utf-8
 __author__ = 'Mave'
 
-import sys
 import re
 import urllib2
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
-from sqlalchemy.orm import sessionmaker, relationship, backref
-
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+from sqlalchemy.orm.exc import NoResultFound
 
 # Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
@@ -158,8 +156,6 @@ print 'Start crawling...'
 
 for page in range(1, total_page + 1):
     games = crawler(urls)
-    now_page += 1
-
     for glr in games:
         glr.print_game()
         # Game Info Check & Commit
@@ -188,6 +184,7 @@ for page in range(1, total_page + 1):
 
         session.commit()
 
+    now_page += 1
     urls = page_switcher(now_page)
 
 

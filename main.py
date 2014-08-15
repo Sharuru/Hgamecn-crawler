@@ -162,6 +162,7 @@ newest_id = int(count[1])
 # Need Improve
 head_record = session.query(GameTable).first()
 row_count = session.query(GameTable).count()
+# If FIRST RUN, replace 'head_record.id' to '0' (Need Improve)
 record_in_database = head_record.id + row_count - 1
 
 print 'If you are FIRST running this crawler'
@@ -177,7 +178,6 @@ check_switch = False
 for page in range(1, total_page + 1):
     games = crawler(urls)
     for glr in games:
-        glr.print_game()
         # Game Info Check & Commit
         if int(glr.id) <= record_in_database:
             print 'Record is Updated.'
@@ -203,6 +203,7 @@ for page in range(1, total_page + 1):
                     session.add(tag_new)
                     #session.commit()
             session.commit()
+            glr.print_game()
             # GameTagsTable Check & Commit (Under Developing)
 
     now_page += 1

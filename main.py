@@ -6,6 +6,7 @@ import re
 import urllib2
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.orm import sessionmaker, relationship, backref
 
@@ -159,8 +160,14 @@ for page in range(1, total_page + 1):
     for glr in games:
         glr.print_game()
 
-        game_info = GameTable(id=glr.id, name=glr.title.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
+        game_info = GameTable(id=glr.id, name=glr.title.decode('utf-8'),
+                              publisher=glr.publisher.decode('utf-8'), publish_date=glr.date.decode('utf-8'))
         session.add(game_info)
+        try:
+            publisher = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
+        except NoResultFound:
+            publisher = PublisherTable(name=glr.publisher.decode('utf-8'))
+            session.add(publisher)
         session.commit()
 
     urls = page_switcher(now_page)

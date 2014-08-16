@@ -161,9 +161,13 @@ newest_id = int(count[1])
 
 # Need Improve
 head_record = session.query(GameTable).first()
+if head_record is None:
+    head_record = 0
+else:
+    head_record = head_record.id
 row_count = session.query(GameTable).count()
-# If FIRST RUN, replace 'head_record.id' to '0' (Need Improve)
-record_in_database = head_record.id + row_count - 1
+
+record_in_database = head_record + row_count - 1
 
 print 'If you are FIRST running this crawler'
 print 'There are {total} Pages need to be crawled.'.format(total=total_page)
@@ -171,9 +175,12 @@ print 'There are {total} Pages need to be crawled.'.format(total=total_page)
 print 'The Newest Record ID is {id}'.format(id=newest_id)
 print 'The Newest Record ID in Local is {id}'.format(id=record_in_database)
 
-print 'Start crawling...'
+if record_in_database > row_count:
+    print 'And It seems You MISSED some record in Local, I will Rebuild the table.'
+    session.query(GameTable).delete()
+    record_in_database = 0
 
-check_switch = False
+print 'Start crawling...'
 
 for page in range(1, total_page + 1):
     games = crawler(urls)

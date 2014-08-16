@@ -195,9 +195,10 @@ for page in range(1, total_page + 1):
                                   publisher=glr.publisher.decode('utf-8'), publish_date=glr.date)
             try:
                 session.add(game_info)
+                session.commit()
             except IntegrityError:
-                print 'had'
-                pass
+                session.rollback()
+
             # Publisher Info Check & Commit
             try:
                 publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()

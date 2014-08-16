@@ -8,6 +8,7 @@ from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError
 
 # Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
@@ -176,8 +177,7 @@ print 'The Newest Record ID is {id}'.format(id=newest_id)
 print 'The Newest Record ID in Local is {id}'.format(id=record_in_database)
 
 if record_in_database > row_count:
-    print 'And It seems You MISSED some record in Local, I will Rebuild the table.'
-    session.query(GameTable).delete()
+    print 'And It seems You MISSED some record in Local, I will try to refill it.'
     record_in_database = 0
 
 print 'Start crawling...'
@@ -193,19 +193,24 @@ for page in range(1, total_page + 1):
         else:
             game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8'),
                                   publisher=glr.publisher.decode('utf-8'), publish_date=glr.date)
-            session.add(game_info)
+            try:
+                session.add(game_info)
+            except IntegrityError:
+                print 'had'
+                pass
             # Publisher Info Check & Commit
             try:
                 publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
             except NoResultFound:
                 publisher_new = PublisherTable(name=glr.publisher.decode('utf-8'))
                 session.add(publisher_new)
-                #session.commit()
             # Tag Info Check & Commit
             for one_tag in glr.tags:
                 try:
+                    print 'try'
                     tag_new = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one()
                 except NoResultFound:
+                    print 'New tag'
                     tag_new = TagsTable(name=one_tag.decode('utf-8'))
                     session.add(tag_new)
                     #session.commit()

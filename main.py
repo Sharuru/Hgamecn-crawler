@@ -61,7 +61,6 @@ class Game(object):
         print 'Publisher:', self.publisher
         print 'Date:', self.date
         print 'Tags:', ', '.join(self.tags)
-        print '\n'
 
 
 # Function Area
@@ -151,6 +150,21 @@ def crawler(url):
             date=publish_date_list[lr], tags=tag_data_list[lr]) for lr in range(0, len(title_list))]
 
 
+def check_record(return_type):
+    head_record = session.query(GameTable).first()
+    if head_record is None:
+        head_record = 0
+    else:
+        head_record = head_record.id
+    row_count = session.query(GameTable).count()
+    record_in_database = head_record + row_count - 1
+    if return_type is 0:
+        return record_in_database
+    elif record_in_database > row_count and return_type is 1:
+        return False
+    elif return_type is 1:
+        return True
+
 # Main Start
 now_page = 1
 urls = 'http://www.hgamecn.com/htmldata/articlelist/'
@@ -160,64 +174,60 @@ count = init_count(urls)
 total_page = int(count[0])
 newest_id = int(count[1])
 
-# Need Improve
-head_record = session.query(GameTable).first()
-if head_record is None:
-    head_record = 0
-else:
-    head_record = head_record.id
-row_count = session.query(GameTable).count()
-
-record_in_database = head_record + row_count - 1
+print 'The Latest Record ID is {id}'.format(id=newest_id)
+print 'The Latest Record ID in Local is {id}'.format(id=check_record(0))
 
 print 'If you are FIRST running this crawler'
 print 'There are {total} Pages need to be crawled.'.format(total=total_page)
 
-print 'The Newest Record ID is {id}'.format(id=newest_id)
-print 'The Newest Record ID in Local is {id}'.format(id=record_in_database)
-
-if record_in_database > row_count:
+# Check Miss
+miss_flag = False
+if check_record(1) is False:
     print 'And It seems You MISSED some record in Local, I will try to refill it.'
-    record_in_database = 0
+    miss_flag = True
 
 print 'Start crawling...'
 
 for page in range(1, total_page + 1):
     games = crawler(urls)
     for glr in games:
+        # Flag set
+        if check_record(1) is False:
+            miss_flag = True
+        else:
+            miss_flag = False
         # Game Info Check & Commit
-        if int(glr.id) <= record_in_database:
+        if int(glr.id) <= check_record(0) and miss_flag is False:
             print 'Record is Updated.'
             print 'All Operation Finished.'
             exit()
         else:
             game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8'),
                                   publisher=glr.publisher.decode('utf-8'), publish_date=glr.date)
+            session.add(game_info)
             try:
-                session.add(game_info)
                 session.commit()
             except IntegrityError:
                 session.rollback()
-
             # Publisher Info Check & Commit
             try:
                 publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
             except NoResultFound:
                 publisher_new = PublisherTable(name=glr.publisher.decode('utf-8'))
                 session.add(publisher_new)
+                session.commit()
             # Tag Info Check & Commit
             for one_tag in glr.tags:
                 try:
-                    print 'try'
                     tag_new = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one()
                 except NoResultFound:
-                    print 'New tag'
                     tag_new = TagsTable(name=one_tag.decode('utf-8'))
                     session.add(tag_new)
-                    #session.commit()
-            session.commit()
-            glr.print_game()
+                    session.commit()
+                finally:
+                    print 'I should get tag_id list here and send to next'
             # GameTagsTable Check & Commit (Under Developing)
+            glr.print_game()
 
     now_page += 1
     urls = page_switcher(now_page)

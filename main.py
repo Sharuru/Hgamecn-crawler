@@ -1,4 +1,4 @@
-#coding: utf-8
+#-*-coding:utf-8 -*-
 __author__ = 'Mave'
 
 import re
@@ -202,10 +202,11 @@ for page in range(1, total_page + 1):
             print 'All Operation Finished.'
             exit()
         else:
-            game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8'),
+            game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8', 'ignore'),
                                   publisher=glr.publisher.decode('utf-8'), publish_date=glr.date)
             session.add(game_info)
             try:
+                print 'Game'
                 session.commit()
             except IntegrityError:
                 session.rollback()
@@ -213,6 +214,7 @@ for page in range(1, total_page + 1):
             try:
                 publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
             except NoResultFound:
+                print 'New Pub'
                 publisher_new = PublisherTable(name=glr.publisher.decode('utf-8'))
                 session.add(publisher_new)
                 session.commit()
@@ -223,11 +225,12 @@ for page in range(1, total_page + 1):
                 except NoResultFound:
                     tag_new = TagsTable(name=one_tag.decode('utf-8'))
                     session.add(tag_new)
+                    print 'New tag'
                     session.commit()
-                finally:
+                #finally:
                     # Find Game ID & Tag ID Here
-                    game_id = session.query(GameTable).filter(GameTable.name == glr.title.decode('utf-8')).one().id
-                    tag_id = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one().id
+                    #game_id = session.query(GameTable).filter(GameTable.name == glr.title.decode('utf-8')).one().id
+                    #tag_id = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one().id
                     #games_tags_new = GameTagsTable(game_id=game_id, tag_id=tag_id)
             # GameTagsTable Check & Commit (Under Developing)
             glr.print_game()

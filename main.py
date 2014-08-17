@@ -26,7 +26,7 @@ class GameTable(Base):
     __tablename__ = 'game'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    publisher = Column(Integer, ForeignKey('publisher.id'))
+    publisher = Column(String, ForeignKey('publisher.name'))
     publisher_is = relationship('PublisherTable', backref='games')
     publish_date = Column(String)
     tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
@@ -225,7 +225,10 @@ for page in range(1, total_page + 1):
                     session.add(tag_new)
                     session.commit()
                 finally:
-                    print 'I should get tag_id list here and send to next'
+                    # Find Game ID & Tag ID Here
+                    game_id = session.query(GameTable).filter(GameTable.name == glr.title.decode('utf-8')).one().id
+                    tag_id = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one().id
+                    #games_tags_new = GameTagsTable(game_id=game_id, tag_id=tag_id)
             # GameTagsTable Check & Commit (Under Developing)
             glr.print_game()
 

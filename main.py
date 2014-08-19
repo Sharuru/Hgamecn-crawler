@@ -1,5 +1,6 @@
 #-*-coding:utf-8 -*-
 __author__ = 'Mave'
+
 import re
 import urllib2
 from sqlalchemy import create_engine
@@ -13,7 +14,7 @@ from sqlalchemy.exc import IntegrityError
 reload(__import__('sys')).setdefaultencoding('utf-8')
 
 
-# Daatabase Object
+# Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
 Base = declarative_base()
 Session = sessionmaker(bind=engine, autoflush=False)
@@ -104,28 +105,28 @@ def init_count(url):
 
 
 def get_id(current_page):
-    match_id = re.compile(u'<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
+    match_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
     return match_id.findall(current_page)
 
 
 def get_title(current_page):
-    match_title = re.compile(u'<div class="gtitle"><a href=".*" target="_blank">(.*)</a></div>')
+    match_title = re.compile('<div class="gtitle"><a href=".*" target="_blank">(.*)</a></div>')
     return match_title.findall(current_page)
 
 
 def get_publisher(current_page):
-    match_publisher = re.compile(u'<span class="maker">.*?<a href=".*?">(.*?)</a></span>')
+    match_publisher = re.compile('<span class="maker">.*?<a href=".*?">(.*?)</a></span>')
     return match_publisher.findall(current_page)
 
 
 def get_publish_date(current_page):
-    match_publish_date = re.compile(u'<span class="date">.*?>(.*?)</a></span>')
+    match_publish_date = re.compile('<span class="date">.*?>(.*?)</a></span>')
     return match_publish_date.findall(current_page)
 
 
 def get_tags(current_page):
-    match_tags = re.compile(u'<div class="tag">(.*?)</div>')
-    match_tag = re.compile(u'<a href=".*?">(.*?)</a>')
+    match_tags = re.compile('<div class="tag">(.*?)</div>')
+    match_tag = re.compile('<a href=".*?">(.*?)</a>')
     return [match_tag.findall(tags) for tags in match_tags.findall(current_page)]
 
 
@@ -142,7 +143,7 @@ def crawler(url):
     #title_list = [title_data[:-6] for title_data in get_title(current_page)]
     # It seems kawaii if they use same method :)
     for title_data in get_title(current_page):
-        title_list.append(title_data[:-6])
+        title_list.append(title_data[:-2])
     for publisher_data in get_publisher(current_page):
         publisher_list.append(publisher_data)
     for publish_date in get_publish_date(current_page):
@@ -168,8 +169,14 @@ def check_record(return_type):
     elif return_type is 1:
         return True
 
+
+def operation_finished():
+    print 'Record is Updated.'
+    print 'All Operation Finished.'
+    exit()
+
 # Main Start
-now_page = 120
+now_page = 1
 urls = 'http://www.hgamecn.com/htmldata/articlelist/'
 
 # Init Count
@@ -178,7 +185,7 @@ total_page = int(count[0])
 newest_id = int(count[1])
 
 print 'The Latest Record ID is {id}'.format(id=newest_id)
-print 'The Latest Record ID in Local is {id}'.format(id=check_record(0))
+print 'The Latest Local Record ID is {id}'.format(id=check_record(0))
 
 print 'If you are FIRST running this crawler'
 print 'There are {total} Pages need to be crawled.'.format(total=total_page)
@@ -201,15 +208,12 @@ for page in range(1, total_page + 1):
             miss_flag = False
         # Game Info Check & Commit
         if int(glr.id) <= check_record(0) and miss_flag is False:
-            print 'Record is Updated.'
-            print 'All Operation Finished.'
-            exit()
+            operation_finished()
         else:
             game_info = GameTable(id=int(glr.id), name=glr.title,
                                   publisher=glr.publisher, publish_date=glr.date)
             session.add(game_info)
             try:
-                print 'Game'
                 session.commit()
             except IntegrityError:
                 session.rollback()
@@ -217,7 +221,6 @@ for page in range(1, total_page + 1):
             try:
                 publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher).one()
             except NoResultFound:
-                print 'New Pub'
                 publisher_new = PublisherTable(name=glr.publisher)
                 session.add(publisher_new)
                 session.commit()
@@ -228,7 +231,6 @@ for page in range(1, total_page + 1):
                 except NoResultFound:
                     tag_new = TagsTable(name=one_tag)
                     session.add(tag_new)
-                    print 'New tag'
                     session.commit()
                 #finally:
                     # Find Game ID & Tag ID Here
@@ -236,9 +238,9 @@ for page in range(1, total_page + 1):
                     #tag_id = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one().id
                     #games_tags_new = GameTagsTable(game_id=game_id, tag_id=tag_id)
             # GameTagsTable Check & Commit (Under Developing)
-            glr.print_game()
+            #glr.print_game()
 
     now_page += 1
     urls = page_switcher(now_page)
 
-print 'All Operation Finished.'
+operation_finished()

@@ -34,16 +34,30 @@ class PublisherTable(Base):
     __tablename__ = 'publishers'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
-    games = relationship('GameTable')
 
 
 class GameTable(Base):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    publisher = Column(Integer, ForeignKey('publishers.id'))
+    publisher_id = Column(Integer, ForeignKey('publishers.id'))
+    _publisher = relationship("Publisher", backref='games')
     publish_date = Column(String)
     _tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
+
+    def _find_or_create_publisher(self, publisher):
+        p = session.query(PublisherTable).filter(PublisherTable.name == publisher)
+        if not(p):
+            p = PublisherTable(name=publisher)
+        return p
+
+    def _get_publisher(self):
+        return self._publisher
+
+    def _set_publisher(self, value):
+        GameTable(publisher_id=self._find_or_create_publisher(value).id)
+
+    publisher = property(_get_publisher, _set_publisher, "PublisherTable")
 
     def _find_or_create_tag(self, tag):
         q = session.query(TagsTable).filter(TagsTable.name == tag)
@@ -229,6 +243,7 @@ for page in range(1, total_page + 1):
         else:
             game = GameTable(id=int(glr.id), name=glr.title, publish_date=glr.date)
             game.tags = glr.tags
+            game.publisher = glr.publisher
             session.add(game)
             try:
                 session.commit()

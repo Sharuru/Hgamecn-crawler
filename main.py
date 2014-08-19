@@ -1,6 +1,5 @@
 #-*-coding:utf-8 -*-
 __author__ = 'Mave'
-
 import re
 import urllib2
 from sqlalchemy import create_engine
@@ -9,6 +8,10 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
+
+
+reload(__import__('sys')).setdefaultencoding('utf-8')
+
 
 # Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
@@ -202,7 +205,7 @@ for page in range(1, total_page + 1):
             print 'All Operation Finished.'
             exit()
         else:
-            game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8', 'ignore'),
+            game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8'),
                                   publisher=glr.publisher.decode('utf-8'), publish_date=glr.date)
             session.add(game_info)
             try:

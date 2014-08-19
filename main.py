@@ -13,7 +13,7 @@ from sqlalchemy.exc import IntegrityError
 reload(__import__('sys')).setdefaultencoding('utf-8')
 
 
-# Database Object
+# Daatabase Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
 Base = declarative_base()
 Session = sessionmaker(bind=engine, autoflush=False)
@@ -98,34 +98,34 @@ def linker(url):
 
 def init_count(url):
     current_page = linker(url)
-    match_page_count = re.compile('<div class="hgc_pages">1/(.*) \xe9')
-    newest_record_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
+    match_page_count = re.compile(u'<div class="hgc_pages">1/(.*) ')
+    newest_record_id = re.compile(u'<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
     return [match_page_count.findall(current_page)[0], newest_record_id.findall(current_page)[0]]
 
 
 def get_id(current_page):
-    match_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
+    match_id = re.compile(u'<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
     return match_id.findall(current_page)
 
 
 def get_title(current_page):
-    match_title = re.compile('<div class="gtitle"><a href=".*" target="_blank">(.*)</a></div>')
+    match_title = re.compile(u'<div class="gtitle"><a href=".*" target="_blank">(.*)</a></div>')
     return match_title.findall(current_page)
 
 
 def get_publisher(current_page):
-    match_publisher = re.compile('<span class="maker">.*?<a href=".*?">(.*?)</a></span>')
+    match_publisher = re.compile(u'<span class="maker">.*?<a href=".*?">(.*?)</a></span>')
     return match_publisher.findall(current_page)
 
 
 def get_publish_date(current_page):
-    match_publish_date = re.compile('<span class="date">.*?>(.*?)</a></span>')
+    match_publish_date = re.compile(u'<span class="date">.*?>(.*?)</a></span>')
     return match_publish_date.findall(current_page)
 
 
 def get_tags(current_page):
-    match_tags = re.compile('<div class="tag">(.*?)</div>')
-    match_tag = re.compile('<a href=".*?">(.*?)</a>')
+    match_tags = re.compile(u'<div class="tag">(.*?)</div>')
+    match_tag = re.compile(u'<a href=".*?">(.*?)</a>')
     return [match_tag.findall(tags) for tags in match_tags.findall(current_page)]
 
 
@@ -135,7 +135,7 @@ def crawler(url):
     publisher_list = []
     publish_date_list = []
     tag_data_list = []
-    current_page = linker(url)
+    current_page = linker(url).decode('utf-8')
     print 'I am operating data in this page...'
     for id_data in get_id(current_page):
         id_list.append(id_data)
@@ -169,7 +169,7 @@ def check_record(return_type):
         return True
 
 # Main Start
-now_page = 1
+now_page = 120
 urls = 'http://www.hgamecn.com/htmldata/articlelist/'
 
 # Init Count
@@ -205,8 +205,8 @@ for page in range(1, total_page + 1):
             print 'All Operation Finished.'
             exit()
         else:
-            game_info = GameTable(id=int(glr.id), name=glr.title.decode('utf-8'),
-                                  publisher=glr.publisher.decode('utf-8'), publish_date=glr.date)
+            game_info = GameTable(id=int(glr.id), name=glr.title,
+                                  publisher=glr.publisher, publish_date=glr.date)
             session.add(game_info)
             try:
                 print 'Game'
@@ -215,18 +215,18 @@ for page in range(1, total_page + 1):
                 session.rollback()
             # Publisher Info Check & Commit
             try:
-                publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher.decode('utf-8')).one()
+                publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher).one()
             except NoResultFound:
                 print 'New Pub'
-                publisher_new = PublisherTable(name=glr.publisher.decode('utf-8'))
+                publisher_new = PublisherTable(name=glr.publisher)
                 session.add(publisher_new)
                 session.commit()
             # Tag Info Check & Commit
             for one_tag in glr.tags:
                 try:
-                    tag_new = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one()
+                    tag_new = session.query(TagsTable).filter(TagsTable.name == one_tag).one()
                 except NoResultFound:
-                    tag_new = TagsTable(name=one_tag.decode('utf-8'))
+                    tag_new = TagsTable(name=one_tag)
                     session.add(tag_new)
                     print 'New tag'
                     session.commit()

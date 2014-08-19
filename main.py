@@ -99,8 +99,8 @@ def linker(url):
 
 def init_count(url):
     current_page = linker(url)
-    match_page_count = re.compile(u'<div class="hgc_pages">1/(.*) ')
-    newest_record_id = re.compile(u'<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
+    match_page_count = re.compile('<div class="hgc_pages">1/(.*) ')
+    newest_record_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
     return [match_page_count.findall(current_page)[0], newest_record_id.findall(current_page)[0]]
 
 
@@ -164,10 +164,11 @@ def check_record(return_type):
     record_in_database = head_record + row_count - 1
     if return_type is 0:
         return record_in_database
-    elif record_in_database > row_count and return_type is 1:
-        return False
     elif return_type is 1:
-        return True
+        if record_in_database > row_count:
+            return False
+        else:
+            return True
 
 
 def operation_finished():

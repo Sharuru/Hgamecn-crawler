@@ -8,6 +8,7 @@ from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import IntegrityError
 
 reload(__import__('sys')).setdefaultencoding('utf-8')
 
@@ -29,6 +30,13 @@ class TagsTable(Base):
     name = Column(String)
 
 
+class PublisherTable(Base):
+    __tablename__ = 'publishers'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    games = relationship('GameTable')
+
+
 class GameTable(Base):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True)
@@ -38,7 +46,7 @@ class GameTable(Base):
     _tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
 
     def _find_or_create_tag(self, tag):
-        q = session.query(TagsTable).filter(TagsTable.name==tag)
+        q = session.query(TagsTable).filter(TagsTable.name == tag)
         t = q.first()
         if not(t):
             t = TagsTable(name=tag)
@@ -56,13 +64,6 @@ class GameTable(Base):
             self._tags.append(self._find_or_create_tag(tag))
 
     tags = property(_get_tags, _set_tags, "TagsTable")
-
-
-class PublisherTable(Base):
-    __tablename__ = 'publishers'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String)
-    games = relationship('GameTable')
 
 Base.metadata.create_all(engine)
 
@@ -231,16 +232,15 @@ for page in range(1, total_page + 1):
             session.add(game)
             try:
                 session.commit()
-            except Exception as e:
+            except IntegrityError:
                 session.rollback()
-                raise e
             # Publisher Info Check & Commit
-            try:
+            '''try:
                 publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher).one()
             except NoResultFound:
                 publisher_new = PublisherTable(name=glr.publisher)
                 session.add(publisher_new)
-                session.commit()
+                session.commit()'''
 
     now_page += 1
     urls = page_switcher(now_page)

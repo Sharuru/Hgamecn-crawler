@@ -22,30 +22,50 @@ session = Session()
 
 GameTagsTable = Table('games_tags', Base.metadata,
                       Column('id', Integer, primary_key=True, autoincrement=True),
-                      Column('game_id', Integer, ForeignKey('game.id')),
+                      Column('game_id', Integer, ForeignKey('games.id')),
                       Column('tag_id', Integer, ForeignKey('tags.id')))
-
-
-class GameTable(Base):
-    __tablename__ = 'game'
-    id = Column(Integer, primary_key=True)
-    name = Column(String)
-    publisher = Column(String, ForeignKey('publisher.name'))
-    publisher_is = relationship('PublisherTable', backref='games')
-    publish_date = Column(String)
-    tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
-
-
-class PublisherTable(Base):
-    __tablename__ = 'publisher'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String)
 
 
 class TagsTable(Base):
     __tablename__ = 'tags'
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String)
+
+
+class GameTable(Base):
+    __tablename__ = 'games'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    publisher = Column(Integer, ForeignKey('publishers.id'))
+    publish_date = Column(String)
+    _tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
+
+    def _find_or_create_tag(self, tag):
+        q = session.query(TagsTable).filter(TagsTable.name==tag)
+        t = q.first()
+        if not(t):
+            t = TagsTable(name=tag)
+        return t
+
+    def _get_tags(self):
+        return self._tags
+
+    def _set_tags(self, value):
+        # clear the list first
+        while self._tags:
+            del self._tags[0]
+        # add new tags
+        for tag in value:
+            self._tags.append(self._find_or_create_tag(tag))
+
+    tags = property(_get_tags, _set_tags, "TagsTable")
+
+
+class PublisherTable(Base):
+    __tablename__ = 'publishers'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String)
+    games = relationship('GameTable')
 
 Base.metadata.create_all(engine)
 
@@ -101,7 +121,20 @@ def init_count(url):
     current_page = linker(url)
     match_page_count = re.compile('<div class="hgc_pages">1/(.*) ')
     newest_record_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
+
     return [match_page_count.findall(current_page)[0], newest_record_id.findall(current_page)[0]]
+
+
+def record_count(need):
+    latest_id_local = session.query(GameTable).order_by(GameTable.id.desc()).first()
+    if latest_id_local is None:
+        latest_id_local = 0
+    else:
+        latest_id_local = latest_id_local.id
+    if need == 'local':
+        return latest_id_local
+    elif need == 'row':
+        return session.query(GameTable).count()
 
 
 def get_id(current_page):
@@ -154,23 +187,6 @@ def crawler(url):
             date=publish_date_list[lr], tags=tag_data_list[lr]) for lr in range(0, len(title_list))]
 
 
-def check_record(return_type):
-    head_record = session.query(GameTable).first()
-    if head_record is None:
-        head_record = 0
-    else:
-        head_record = head_record.id
-    row_count = session.query(GameTable).count()
-    record_in_database = head_record + row_count - 1
-    if return_type is 0:
-        return record_in_database
-    elif return_type is 1:
-        if record_in_database > row_count:
-            return False
-        else:
-            return True
-
-
 def operation_finished():
     print 'Record is Updated.'
     print 'All Operation Finished.'
@@ -183,19 +199,22 @@ urls = 'http://www.hgamecn.com/htmldata/articlelist/'
 # Init Count
 count = init_count(urls)
 total_page = int(count[0])
-newest_id = int(count[1])
+latest_id_at_remote = int(count[1])
+latest_id_at_local = record_count('local')
+row_count = record_count('row')
 
-print 'The Latest Record ID is {id}'.format(id=newest_id)
-print 'The Latest Local Record ID is {id}'.format(id=check_record(0))
 
-print 'If you are FIRST running this crawler'
-print 'There are {total} Pages need to be crawled.'.format(total=total_page)
+print 'The Latest Record ID at Remote is {id}'.format(id=latest_id_at_remote)
+print 'The Latest Record ID at Local is {id}'.format(id=latest_id_at_local)
 
 # Check Miss
 miss_flag = False
-if check_record(1) is False:
-    print 'And It seems You MISSED some record in Local, I will try to refill it.'
+if latest_id_at_local != row_count:
+    print 'But It seems You MISSED some record in Local, I will try to refill it.'
     miss_flag = True
+
+print 'If you are FIRST running this crawler'
+print 'There are {total} Pages need to be crawled.'.format(total=total_page)
 
 print 'Start crawling...'
 
@@ -203,21 +222,22 @@ for page in range(1, total_page + 1):
     games = crawler(urls)
     for glr in games:
         # Flag set
-        if check_record(1) is False:
+        if record_count('local') != record_count('row') or record_count('local') != latest_id_at_remote:
             miss_flag = True
         else:
             miss_flag = False
         # Game Info Check & Commit
-        if int(glr.id) <= check_record(0) and miss_flag is False:
+        if int(glr.id) <= latest_id_at_remote and miss_flag is False:
             operation_finished()
         else:
-            game_info = GameTable(id=int(glr.id), name=glr.title,
-                                  publisher=glr.publisher, publish_date=glr.date)
-            session.add(game_info)
+            game = GameTable(id=int(glr.id), name=glr.title, publish_date=glr.date)
+            game.tags = glr.tags
+            session.add(game)
             try:
                 session.commit()
-            except IntegrityError:
+            except Exception as e:
                 session.rollback()
+                raise e
             # Publisher Info Check & Commit
             try:
                 publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher).one()
@@ -225,20 +245,6 @@ for page in range(1, total_page + 1):
                 publisher_new = PublisherTable(name=glr.publisher)
                 session.add(publisher_new)
                 session.commit()
-            # Tag Info Check & Commit
-            for one_tag in glr.tags:
-                try:
-                    tag_new = session.query(TagsTable).filter(TagsTable.name == one_tag).one()
-                except NoResultFound:
-                    tag_new = TagsTable(name=one_tag)
-                    session.add(tag_new)
-                    session.commit()
-                #finally:
-                    # Find Game ID & Tag ID Here
-                    #game_id = session.query(GameTable).filter(GameTable.name == glr.title.decode('utf-8')).one().id
-                    #tag_id = session.query(TagsTable).filter(TagsTable.name == one_tag.decode('utf-8')).one().id
-                    #games_tags_new = GameTagsTable(game_id=game_id, tag_id=tag_id)
-            # GameTagsTable Check & Commit (Under Developing)
             #glr.print_game()
 
     now_page += 1

@@ -40,22 +40,26 @@ class GameTable(Base):
     __tablename__ = 'games'
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    publisher_id = Column(Integer, ForeignKey('publishers.id'))
-    _publisher = relationship("Publisher", backref='games')
     publish_date = Column(String)
+    publisher_id = Column(Integer, ForeignKey('publishers.id'))
     _tags = relationship('TagsTable', secondary=GameTagsTable, backref='games')
 
+    _publisher = relationship('PublisherTable', backref='games')
+
     def _find_or_create_publisher(self, publisher):
-        p = session.query(PublisherTable).filter(PublisherTable.name == publisher)
-        if not(p):
-            p = PublisherTable(name=publisher)
-        return p
+        q = session.query(PublisherTable).filter(PublisherTable.name == publisher)
+        t = q.first()
+        if not(t):
+            t = PublisherTable(name=publisher)
+        return t
 
     def _get_publisher(self):
         return self._publisher
 
     def _set_publisher(self, value):
-        GameTable(publisher_id=self._find_or_create_publisher(value).id)
+        # 这里应该有个赋值操作
+        # 返回的就是一个 Pblusher instance，直接赋值
+        self._publisher = self._find_or_create_publisher(value)
 
     publisher = property(_get_publisher, _set_publisher, "PublisherTable")
 

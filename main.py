@@ -7,7 +7,6 @@ from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.exc import IntegrityError
 
 reload(__import__('sys')).setdefaultencoding('utf-8')
@@ -253,13 +252,6 @@ for page in range(1, total_page + 1):
                 session.commit()
             except IntegrityError:
                 session.rollback()
-            # Publisher Info Check & Commit
-            '''try:
-                publisher_new = session.query(PublisherTable).filter(PublisherTable.name == glr.publisher).one()
-            except NoResultFound:
-                publisher_new = PublisherTable(name=glr.publisher)
-                session.add(publisher_new)
-                session.commit()'''
 
     now_page += 1
     urls = page_switcher(now_page)

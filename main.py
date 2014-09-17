@@ -2,14 +2,13 @@
 __author__ = 'Mave'
 
 import re
-import urllib2
+import urllib.request
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Table, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.exc import IntegrityError
 
-reload(__import__('sys')).setdefaultencoding('utf-8')
 
 # Database Object
 engine = create_engine('sqlite:///Page_Record.db', connect_args={'check_same_thread': False})
@@ -56,8 +55,6 @@ class GameTable(Base):
         return self._publisher
 
     def _set_publisher(self, value):
-        # 这里应该有个赋值操作
-        # 返回的就是一个 Pblusher instance，直接赋值
         self._publisher = self._find_or_create_publisher(value)
 
     publisher = property(_get_publisher, _set_publisher, "PublisherTable")
@@ -80,7 +77,7 @@ class GameTable(Base):
         for tag in value:
             self._tags.append(self._find_or_create_tag(tag))
 
-    tags = property(_get_tags, _set_tags, "TagsTable")
+    tags = property(_get_tags, _set_tags, 'TagsTable')
 
 Base.metadata.create_all(engine)
 
@@ -95,11 +92,11 @@ class Game(object):
         self.tags = tags
 
     def print_game(self):
-        print self.id
-        print self.title
-        print 'Publisher:', self.publisher
-        print 'Date:', self.date
-        print 'Tags:', ', '.join(self.tags)
+        print(self.id)
+        print(self.title)
+        print('Publisher:' + self.publisher)
+        print('Date:' + self.date)
+        print('Tags:' + ', ').join(self.tags)
 
 
 # Function Area
@@ -111,25 +108,16 @@ def page_switcher(need_page):
 
 
 def linker(url):
-    print 'Connecting the target website...'
-    request = urllib2.Request(url)
-    request.add_header('User-Agent', 'Macho Macho Man')
+    print('Connecting the target website...')
+    req = urllib.request.Request(url)
+    req.add_header('User-Agent', 'Macho Macho Man')
     try:
-        response = urllib2.urlopen(request, timeout=5)
-    except urllib2.URLError as e:
-        if hasattr(e, 'reason'):
-            print 'Sorry, I can not get the target website. (Because of me)'
-            print 'Reason: ', e.reason
-            exit()
-        elif hasattr(e, 'code'):
-            print 'Sorry, I can not get the target website. (Because of station)'
-            print 'Error Code: ', e.code
-            exit()
-    else:
-        print url,
-        print 'Connected.'
-        print 'Response Code: ', response.code
-        return response.read()
+        response = urllib.request.urlopen(req, timeout=5)
+        print(url, end=' Connected.\n')
+        return response.read().decode('utf-8')
+    except:
+        print('Sorry, I can not get the target website.')
+        exit()
 
 
 def init_count(url):
@@ -184,8 +172,8 @@ def crawler(url):
     publisher_list = []
     publish_date_list = []
     tag_data_list = []
-    current_page = linker(url).decode('utf-8')
-    print 'I am operating data in this page...'
+    current_page = linker(url)
+    print('I am operating data in this page...')
     for id_data in get_id(current_page):
         id_list.append(id_data)
     #title_list = [title_data[:-6] for title_data in get_title(current_page)]
@@ -203,8 +191,8 @@ def crawler(url):
 
 
 def operation_finished():
-    print 'Record is Updated.'
-    print 'All Operation Finished.'
+    print('Record is Updated.')
+    print('All Operation Finished.')
     exit()
 
 # Main Start
@@ -218,19 +206,19 @@ latest_id_at_remote = int(count[1])
 latest_id_at_local = record_count('local')
 row_count = record_count('row')
 
-print 'The Latest Record ID at Remote is {id}'.format(id=latest_id_at_remote)
-print 'The Latest Record ID at Local is {id}'.format(id=latest_id_at_local)
+print('The Latest Record ID at Remote is {id}'.format(id=latest_id_at_remote))
+print('The Latest Record ID at Local is {id}'.format(id=latest_id_at_local))
 
 # Check Miss
 miss_flag = False
 if latest_id_at_local != row_count:
-    print 'But It seems You MISSED some record in Local, I will try to refill it.'
+    print('But It seems You MISSED some record in Local, I will try to refill it.')
     miss_flag = True
 
-print 'If you are FIRST running this crawler'
-print 'There are {total} Pages need to be crawled.'.format(total=total_page)
+print('If you are FIRST running this crawler')
+print('There are {total} Pages need to be crawled.'.format(total=total_page))
 
-print 'Start crawling...'
+print('Start crawling...')
 
 for page in range(1, total_page + 1):
     games = crawler(urls)
@@ -252,6 +240,8 @@ for page in range(1, total_page + 1):
                 session.commit()
             except IntegrityError:
                 session.rollback()
+
+    print('Current page finished.')
 
     now_page += 1
     urls = page_switcher(now_page)

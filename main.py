@@ -124,7 +124,6 @@ def init_count(url):
     current_page = linker(url)
     match_page_count = re.compile('<div class="hgc_pages">1/(.*) ')
     newest_record_id = re.compile('<div class="gtitle"><a href="/htmldata/article/(.*).html" target="_blank">')
-
     return [match_page_count.findall(current_page)[0], newest_record_id.findall(current_page)[0]]
 
 
@@ -179,7 +178,11 @@ def crawler(url):
     #title_list = [title_data[:-6] for title_data in get_title(current_page)]
     # It seems kawaii if they use same method :)
     for title_data in get_title(current_page):
-        title_list.append(title_data[:-2])
+        # For special title check
+        if '\u4ecb\u7ecd' in title_data:
+            title_list.append(title_data[:-2])
+        else:
+            title_list.append(title_data)
     for publisher_data in get_publisher(current_page):
         publisher_list.append(publisher_data)
     for publish_date in get_publish_date(current_page):

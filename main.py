@@ -1,4 +1,4 @@
-#-*-coding:utf-8 -*-
+# -*-coding:utf-8 -*-
 __author__ = 'Mave'
 
 import re
@@ -47,7 +47,7 @@ class GameTable(Base):
     def _find_or_create_publisher(self, publisher):
         q = session.query(PublisherTable).filter(PublisherTable.name == publisher)
         t = q.first()
-        if not(t):
+        if not (t):
             t = PublisherTable(name=publisher)
         return t
 
@@ -62,7 +62,7 @@ class GameTable(Base):
     def _find_or_create_tag(self, tag):
         q = session.query(TagsTable).filter(TagsTable.name == tag)
         t = q.first()
-        if not(t):
+        if not (t):
             t = TagsTable(name=tag)
         return t
 
@@ -78,6 +78,7 @@ class GameTable(Base):
             self._tags.append(self._find_or_create_tag(tag))
 
     tags = property(_get_tags, _set_tags, 'TagsTable')
+
 
 Base.metadata.create_all(engine)
 
@@ -190,7 +191,7 @@ def crawler(url):
     for tag_data in get_tags(current_page):
         tag_data_list.append(tag_data)
     return [Game(id=id_list[lr], title=title_list[lr], publisher=publisher_list[lr],
-            date=publish_date_list[lr], tags=tag_data_list[lr]) for lr in range(0, len(title_list))]
+                 date=publish_date_list[lr], tags=tag_data_list[lr]) for lr in range(0, len(title_list))]
 
 
 def operation_finished():
